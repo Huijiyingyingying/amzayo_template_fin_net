@@ -1,0 +1,541 @@
+{{define "theme-custom/home"}}
+{{template "theme-custom/header" .}}
+{{if ts .CustomCode}} {{.CustomCode|safe}} {{end}}
+{{template "theme-custom/menu" .}}
+<div class="nb-container">
+    <div class="ui container">
+        <div id="app">
+            <div class="ui styled fluid accordion" v-for="group in groups">
+                <div class="active title">
+                    <i class="dropdown icon"></i>
+                    @#(group.Tag!==''?group.Tag:'{{tr "Default"}}')#@
+                </div>
+                <div class="active content">
+                    <div class="ui stackable status cards">
+                        <div v-for="server in group.data" :id="server.ID" class="ui card">
+                            <div class="content" v-if="server.Host" style="margin-top: 10px; padding-bottom: 5px">
+                                <div class="header">
+                                    <i :class="server.Host.CountryCode + ' flag'"></i>&nbsp;<i
+                                        v-if='server.Host.Platform == "darwin"' class="apple icon"></i><i
+                                        v-else-if='isWindowsPlatform(server.Host.Platform)' class="windows icon"></i><i
+                                        v-else :class="'fl-' + getFontLogoClass(server.Host.Platform)"></i>
+                                        <div class="nameroll" :id="'nameroll-' + server.ID" style="display: inline-block;">
+                                            <div class="namecontent" :id="'namecontent-' + server.ID">
+                                                @#server.Name#@
+                                                <span v-if="!server.live">[Offline]</span>
+                                            </div>
+                                        </div>
+                                    <i class="amzayo-secondary-font info circle icon" style="height: 28px"></i>
+                                    <!-- style="margin-bottom: 0" -->
+                                    <div class="ui content popup">
+                                        {{tr "Platform"}}: @#server.Host.Platform#@-@#server.Host.PlatformVersion#@
+                                        [<span
+                                            v-if="server.Host.Virtualization">@#server.Host.Virtualization#@:</span>@#server.Host.Arch#@]<br />
+                                        <!-- 原更多卡片信息 -->
+                                        <!-- CPU: @#server.Host.CPU#@<br /> -->
+                                        <!-- {{tr "DiskUsed"}}:
+                                        @#formatByteSize(server.State.DiskUsed)#@/@#formatByteSize(server.Host.DiskTotal)#@<br />
+                                        {{tr "MemUsed"}}:
+                                        @#formatByteSize(server.State.MemUsed)#@/@#formatByteSize(server.Host.MemTotal)#@<br />
+                                        {{tr "SwapUsed"}}:
+                                        @#formatByteSize(server.State.SwapUsed)#@/@#formatByteSize(server.Host.SwapTotal)#@<br />
+                                        {{tr "NetTransfer"}}: <i
+                                            class="arrow alternate circle down outline icon"></i>@#formatByteSize(server.State.NetInTransfer)#@<i
+                                            class="arrow alternate circle up outline icon"></i>@#formatByteSize(server.State.NetOutTransfer)#@<br /> -->
+                                        {{tr "Load"}}: @# toFixed2(server.State.Load1) #@/@#
+                                        toFixed2(server.State.Load5) #@/@#
+                                        toFixed2(server.State.Load15) #@<br />
+                                        {{tr "ProcessCount"}}: @# server.State.ProcessCount #@<br />
+                                        <!-- {{tr "ConnCount"}}: TCP @# server.State.TcpConnCount #@ / UDP @# server.State.UdpConnCount #@<br /> -->
+                                        {{tr "BootTime"}}: @# formatTimestamp(server.Host.BootTime) #@<br />
+                                        {{tr "LastActive"}}: @# new Date(server.LastActive).toLocaleString() #@<br />
+                                        {{tr "Version"}}: @#server.Host.Version#@<br />
+                                    </div>
+                                    <div class="ui divider" style="margin-bottom: 5px"></div>
+                                </div>
+                                <div class="header header_info">
+                                    <i class="bi bi-cpu-fill" style="font-size: 1rem; color: #4a86e8;"></i>
+                                    <div class="cpuroll" style="white-space: nowrap;;overflow: hidden;">
+                                        <div class="cpucontent rollanimation">@#getCpuModel(server.Host.CPU)#@&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div><div class="cpucontent rollanimation">@#getCpuModel(server.Host.CPU)#@&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+                                    </div>
+                                    <i class="bi bi-memory" style="font-size: 1rem; color: #00ac0d;"></i>
+                                    <div class="memorycontent">
+                                        @#getByteToGB(server.Host.MemTotal)#@
+                                    </div>
+                                    <i class="bi bi-hdd-rack-fill" style="font-size: 1rem; color: #980000"></i>
+                                    <div class="hddcontent">
+                                        @#getByteToGB(server.Host.DiskTotal)#@
+                                    </div>
+                                </div>
+                                <div class="description">
+                                    <div class="ui grid">
+                                        <div class="three wide column">CPU</div>
+                                        <div class="thirteen wide column">
+                                            <div :class="formatPercent(server.live,server.State.CPU, 100).class">
+                                                <div class="bar"
+                                                    :style="formatPercent(server.live,server.State.CPU, 100).style">
+                                                    <small>@#formatPercent(server.live,server.State.CPU,100).percent#@%</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="three wide column">{{tr "MemUsed"}}</div>
+                                        <div class="thirteen wide column">
+                                            <div
+                                                :class="formatPercent(server.live,server.State.MemUsed, server.Host.MemTotal).class">
+                                                <div class="bar"
+                                                    :style="formatPercent(server.live,server.State.MemUsed, server.Host.MemTotal).style">
+                                                    <small>@#parseInt(server.State?server.State.MemUsed/server.Host.MemTotal*100:0)#@%</small>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- 内存详情 -->
+                                        <div class="three wide column">详情</div>
+                                        <div class="thirteen wide column">
+                                            @#formatByteSize(server.State.MemUsed)#@/@#formatByteSize(server.Host.MemTotal)#@<br />
+                                        </div>
+
+                                        <!-- <div class="three wide column">{{tr "SwapUsed"}}</div>
+                                        <div v-if="server.Host.SwapTotal != 0" class="thirteen wide column">
+                                            <div
+                                                :class="formatPercent(server.live,server.State.SwapUsed, server.Host.SwapTotal).class">
+                                                <div class="bar"
+                                                    :style="formatPercent(server.live,server.State.SwapUsed, server.Host.SwapTotal).style">
+                                                    <small>
+                                                        @#parseInt(server.State?server.State.SwapUsed/server.Host.SwapTotal*100:0)#@%
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div v-else class="thirteen wide column">
+                                            <div
+                                                :class="formatPercent(server.live,server.State.SwapUsed, server.Host.SwapTotal).class">
+                                                <div class="bar"
+                                                    style="width: 100% !important;background-color:rgba(255, 153, 1, 0.65) !important; text-align: center !important;">
+                                                    <small>
+                                                        SWAP分区未开启
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div> -->
+
+                                        <!-- 交换分区详情 -->
+                                        <!-- <div class="three wide column">交换</div>
+                                        <div v-if="server.Host.SwapTotal != 0" class="thirteen wide column">
+                                            @#formatByteSize(server.State.SwapUsed)#@/@#formatByteSize(server.Host.SwapTotal)#@<br />
+                                        </div>
+                                        <div v-else class="thirteen wide column">
+                                            该机器未开启SWAP分区<br />
+                                        </div> -->
+
+                                        <div v-if="server.Host.SwapTotal != 0" class="three wide column">交换</div>
+                                        <div v-if="server.Host.SwapTotal != 0" class="thirteen wide column">
+                                            @#formatByteSize(server.State.SwapUsed)#@/@#formatByteSize(server.Host.SwapTotal)#@<br />
+                                        </div>
+
+                                        <div class="three wide column">{{tr "NetSpeed"}}</div>
+                                        <div class="thirteen wide column">
+                                            <i class="arrow alternate circle down outline icon"></i>
+                                            @#formatByteSize(server.State.NetInSpeed)#@/s
+                                            <i class="arrow alternate circle up outline icon"></i>
+                                            @#formatByteSize(server.State.NetOutSpeed)#@/s
+                                        </div>
+
+
+                                        <!-- 流量 -->
+                                        <div class="three wide column">{{tr "NetTransfer"}}</div>
+                                        <div class="thirteen wide column">
+                                            <i class="arrow alternate circle down outline icon"></i>
+                                            @#formatByteSize(server.State.NetInTransfer)#@
+                                            <i class="arrow alternate circle up outline icon"></i>
+                                            @#formatByteSize(server.State.NetOutTransfer)#@<br />
+                                        </div>
+
+
+                                        <!-- 连接数 -->
+                                        <div class="three wide column">连接</div>
+                                        <div class="thirteen wide column">
+                                            TCP @# server.State.TcpConnCount #@ / UDP @# server.State.UdpConnCount
+                                            #@<br />
+                                        </div>
+
+                                        <div class="three wide column">{{tr "DiskUsed"}}</div>
+                                        <div class="thirteen wide column">
+                                            <div
+                                                :class="formatPercent(server.live,server.State.DiskUsed, server.Host.DiskTotal).class">
+                                                <div class="bar"
+                                                    :style="formatPercent(server.live,server.State.DiskUsed, server.Host.DiskTotal).style">
+                                                    <small>@#parseInt(server.State?server.State.DiskUsed/server.Host.DiskTotal*100:0)#@%</small>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- 硬盘详情 -->
+                                        <div class="three wide column">详情</div>
+                                        <div class="thirteen wide column">
+                                            @#formatByteSize(server.State.DiskUsed)#@/@#formatByteSize(server.Host.DiskTotal)#@<br />
+                                        </div>
+
+                                        <!-- 到期时间 -->
+                                        <div class="three wide column" v-if="serverExpirationInfo[server.ID]">到期</div>
+                                        <div class="thirteen wide column" v-if="serverExpirationInfo[server.ID]">
+                                            @#serverExpirationInfo[server.ID].diffDays#@ 天
+                                            (@#serverExpirationInfo[server.ID].endDate#@)<br />
+                                        </div>
+
+                                        <div class="three wide column">{{tr "Uptime"}}</div>
+                                        <div class="thirteen wide column">
+                                            <i class="clock icon"></i>@#secondToDate(server.State.Uptime)#@
+                                        </div>
+                                        
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="content" v-else>
+                                <p>@#server.Name#@</p>
+                                <p>{{tr "ServerIsOffline"}}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{template "theme-custom/footer" .}}
+<script>
+    const initData = JSON.parse('{{.Servers}}').servers;
+    var statusCards = new Vue({
+        el: '#app',
+        delimiters: ['@#', '#@'],
+        data: {
+            data: initData,
+            groups: [],
+            cache: [],
+            serverExpirationInfo: {}
+        },
+        created() {
+            this.group()
+            this.calculateDiffDays()
+        },
+        mounted() {
+            $('.amzayo-secondary-font.info.icon').popup({
+                popup: '.ui.content.popup',
+                exclusive: true,
+                position: "bottom right",
+                boundary: "#app",
+            });
+            this.calculateDiffDays()
+            this.checkNameOverflow();
+            window.addEventListener('resize', this.checkNameOverflow);
+        },
+        beforeDestroy() {
+            window.removeEventListener('resize', this.checkNameOverflow);
+        },
+        updated() {
+            this.checkNameOverflow();
+        },
+        methods: {            
+            calculateDiffDays() {
+                this.data.forEach(server => {
+                    const diffDays = this.getExpirationStatus(server.PublicNote);
+                    this.$set(this.serverExpirationInfo, server.ID, diffDays); // 使用 $set 以确保响应性
+                });
+            },
+            toFixed2(f) {
+                return f.toFixed(2)
+            },
+            isWindowsPlatform(str) {
+                return str.includes('Windows')
+            },
+            getFontLogoClass(str) {
+                if (["almalinux",
+                    "alpine",
+                    "aosc",
+                    "apple",
+                    "archlinux",
+                    "archlabs",
+                    "artix",
+                    "budgie",
+                    "centos",
+                    "coreos",
+                    "debian",
+                    "deepin",
+                    "devuan",
+                    "docker",
+                    "elementary",
+                    "fedora",
+                    "ferris",
+                    "flathub",
+                    "freebsd",
+                    "gentoo",
+                    "gnu-guix",
+                    "illumos",
+                    "kali-linux",
+                    "linuxmint",
+                    "mageia",
+                    "mandriva",
+                    "manjaro",
+                    "nixos",
+                    "openbsd",
+                    "opensuse",
+                    "pop-os",
+                    "raspberry-pi",
+                    "redhat",
+                    "rocky-linux",
+                    "sabayon",
+                    "slackware",
+                    "snappy",
+                    "solus",
+                    "tux",
+                    "ubuntu",
+                    "void",
+                    "zorin"].indexOf(str)
+                    > -1) {
+                    return str;
+                }
+                if (['openwrt', 'linux'].indexOf(str) > -1) {
+                    return 'tux';
+                }
+                if (str == 'amazon') {
+                    return 'redhat';
+                }
+                if (str == 'arch') {
+                    return 'archlinux';
+                }
+                return '';
+            },
+            group() {
+                this.groups = groupingData(this.data, "Tag")
+            },
+            formatPercent(live, used, total) {
+                const percent = live ? (parseInt(used / total * 100) || 0) : -1
+                if (!this.cache[percent]) {
+                    this.cache[percent] = {
+                        class: {
+                            ui: true,
+                            progress: true,
+                        },
+                        style: {
+                            'transition-duration': '300ms',
+                            'min-width': 'unset',
+                            width: percent + '% !important',
+                        },
+                        percent,
+                    }
+                    if (percent < 0) {
+                        this.cache[percent].style['background-color'] = 'slategray'
+                        this.cache[percent].class.offline = true
+                    } else if (percent < 51) {
+                        this.cache[percent].style['background-color'] = '#0a94f2'
+                        this.cache[percent].class.fine = true
+                    } else if (percent < 81) {
+                        this.cache[percent].style['background-color'] = 'orange'
+                        this.cache[percent].class.warning = true
+                    } else {
+                        this.cache[percent].style['background-color'] = 'crimson'
+                        this.cache[percent].class.error = true
+                    }
+                }
+                return this.cache[percent]
+            },
+            secondToDate(s) {
+                var d = Math.floor(s / 3600 / 24);
+                if (d > 0) {
+                    return d + ' {{tr "Day"}}'
+                }
+                var h = Math.floor(s / 3600 % 24);
+                var m = Math.floor(s / 60 % 60);
+                var s = Math.floor(s % 60);
+                return h + ":" + ("0" + m).slice(-2) + ":" + ("0" + s).slice(-2);
+            },
+            formatTimestamp(t) {
+                return new Date(t * 1000).toLocaleString()
+            },
+            formatByteSize(bs) {
+                const x = readableBytes(bs)
+                return x != "NaN undefined" ? x : '0B'
+            },
+            getCoreAndGHz(str) {
+                if ((str || []).hasOwnProperty(0) === false) {
+                    return '';
+                }
+                str = str[0];
+                let GHz = str.match(/(\d|\.)+GHz/g);
+                let Core = str.match(/(\d|\.)+ Physical/g);
+                GHz = GHz !== null ? GHz.hasOwnProperty(0) === false ? '' : GHz[0] : ''
+                Core = Core !== null ? Core.hasOwnProperty(0) === false ? '?' : Core[0] : '?'
+                if (Core === '?') {
+                    let Core = str.match(/(\d|\.)+ Virtual/g);
+                    Core = Core !== null ? Core.hasOwnProperty(0) === false ? '?' : Core[0] : '?'
+                    return Core.replace('Virtual', 'C')
+                }
+                return Core.replace('Physical', 'C');
+
+            },
+            getByteToGB(bs) {
+                if (bs < 900 * 1024 * 1024) {
+                    return (bs / 1024 / 1024).toFixed(0) + 'M';
+                } else if (bs < 1000 * 1024 * 1024 * 1024) {
+                    if (bs / 1024 / 1024 / 1024 < 100) {
+                        return (bs / 1024 / 1024 / 1024).toFixed(2) + 'G';
+                    } else {
+                        return (bs / 1024 / 1024 / 1024).toFixed(1) + 'G';
+                    }
+                } else if (bs < 1000 * 1024 * 1024 * 1024 * 1024) {
+                    if (bs / 1024 / 1024 / 1024 / 1024 < 100) {
+                        return (bs / 1024 / 1024 / 1024 / 1024).toFixed(2) + 'T';
+                    } else {
+                        return (bs / 1024 / 1024 / 1024 / 1024).toFixed(1) + 'T';
+                    }
+                } else {
+                    if (bs / 1024 / 1024 / 1024 / 1024 / 1024 < 100) {
+                        return (bs / 1024 / 1024 / 1024 / 1024 / 1024).toFixed(2) + 'P';
+                    } else {
+                        return (bs / 1024 / 1024 / 1024 / 1024 / 1024).toFixed(1) + 'P';
+                    }
+
+                }
+            },
+            getCpuModel(cpu) {
+                if ((cpu || []).hasOwnProperty(0) === false) {
+                    return '';
+                }
+                return cpu[0];
+            },
+            getExpirationStatus(publicNote) {
+                let parsedNote;
+                if (typeof publicNote === 'string') {
+                    try {
+                        parsedNote = JSON.parse(publicNote);
+                    } catch (e) {
+                        return null;
+                    }
+                } else {
+                    parsedNote = publicNote;
+                }
+                if (!parsedNote || typeof parsedNote !== 'object') {
+                    return null;
+                }
+                const billingDataMod = parsedNote.billingDataMod;
+                if (!billingDataMod || !billingDataMod.endDate) {
+                    return null;
+                }
+                const endDate = new Date(billingDataMod.endDate);
+                const now = new Date();
+                if (isNaN(endDate.getTime())) {
+                    return null;
+                }
+                const diffTime = endDate - now;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return {
+                    diffDays: diffDays,
+                    endDate: endDate.toISOString().split('T')[0] // 这里将日期格式化为 YYYY-MM-DD
+                };
+            },
+            checkNameOverflow() {
+                this.$nextTick(() => {
+                    this.servers.forEach(server => {
+                        const container = document.getElementById(`nameroll-${server.ID}`);
+                        const content = document.getElementById(`namecontent-${server.ID}`);
+                        
+                        if (content && container) {
+                            const offlineText = server.live ? '' : ' [Offline]';
+                            const fullText = `${server.Name}${offlineText}`;
+                            
+                            if (content.scrollWidth > container.clientWidth) {
+                                container.style.whiteSpace = 'nowrap';
+                                container.style.overflow = 'hidden';
+                                content.innerHTML = `${fullText}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${fullText}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`;
+                                content.classList.add('rollanimation');
+                            } else {
+                                container.style.whiteSpace = 'normal';
+                                container.style.overflow = 'visible';
+                                content.innerHTML = server.Name;
+                                content.classList.remove('rollanimation');
+                            }
+                        }
+                    });
+                });
+            }
+        }
+    })
+
+    function groupingData(data, field) {
+        let map = {};
+        let dest = [];
+        data.forEach(item => {
+            if (!map[item[field]]) {
+                dest.push({
+                    [field]: item[field],
+                    data: [item]
+                });
+                map[item[field]] = item;
+            } else {
+                dest.forEach(dItem => {
+                    if (dItem[field] == item[field]) {
+                        dItem.data.push(item);
+                    }
+                });
+            }
+        })
+        return dest;
+    }
+
+    let canShowError = true;
+    function connect() {
+        const wsProtocol = window.location.protocol == "https:" ? "wss" : "ws"
+        const ws = new WebSocket(wsProtocol + '://' + window.location.host + '/ws');
+        ws.onopen = function (evt) {
+            canShowError = true;
+            $.suiAlert({
+                title: '{{tr "RealtimeChannelEstablished"}}',
+                description: '{{tr "GetTheLatestMonitoringDataInRealTime"}}',
+                type: 'success',
+                time: '2',
+                position: 'top-center',
+            });
+        }
+        ws.onmessage = function (evt) {
+            const oldServers = statusCards.servers
+            const data = JSON.parse(evt.data)
+            statusCards.servers = data.servers
+            for (let i = 0; i < statusCards.servers.length; i++) {
+                const ns = statusCards.servers[i];
+                if (!ns.Host) ns.live = false
+                else {
+                    const lastActive = new Date(ns.LastActive).getTime()
+                    if (data.now - lastActive > 10 * 1000) {
+                        ns.live = false
+                    } else {
+                        ns.live = true
+                    }
+                }
+            }
+            statusCards.groups = groupingData(statusCards.servers, "Tag")
+        }
+        ws.onclose = function () {
+            if (canShowError) {
+                canShowError = false;
+                $.suiAlert({
+                    title: '{{tr "RealtimeChannelDisconnect"}}',
+                    description: '{{tr "CanNotGetTheLatestMonitoringDataInRealTime"}}',
+                    type: 'warning',
+                    time: '2',
+                    position: 'top-center',
+                });
+            }
+            setTimeout(function () {
+                connect()
+            }, 3000);
+        }
+        ws.onerror = function () {
+            ws.close()
+        }
+    }
+
+    connect();
+
+    $('.ui.accordion').accordion({ "exclusive": false });
+</script>
+{{end}}
