@@ -5,7 +5,7 @@
 ## 前言
 
 此项目的目的：
-- 一是原帖里的下载地址没法正常下载了，我看了一下旧版本帖子能下载，然后我突发奇想旧的地址用的是旧的CDN，新的地址换了另外一个CDN，我直接改成用旧的CDN域名就能下载了，很神奇。[https://cdn.amzayo.top/static/public/amzayo_template_fin_net.zip](下载地址)
+- 一是原帖里的下载地址没法正常下载了，我看了一下旧版本帖子能下载，然后我突发奇想旧的地址用的是旧的CDN，新的地址换了另外一个CDN，我直接改成用旧的CDN域名就能下载了，很神奇。[下载地址](https://cdn.amzayo.top/static/public/amzayo_template_fin_net.zip)
 - 二是该项目是二改该主题，在这里感谢Amzayo大佬的制作。
 
 **该项目基本由Clude3.5以及我的前端朋友(工具人)的帮助下二改的，本人不擅长前端，看到史代码轻点喷。**
